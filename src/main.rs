@@ -2,6 +2,7 @@ use std::process::{Command, Stdio};
 use std::io::{Write, BufReader, BufRead};
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::env;
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Test {
@@ -44,8 +45,10 @@ impl TestResult {
 }
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    let path_to_config = &args[1];
 
-    let contents = check_test_file();
+    let contents = check_test_file(path_to_config);
     let test_file = parse_test(&contents);
     let tests = test_file.tests;
 
@@ -108,13 +111,15 @@ fn construct_input_string(inputs: &Vec<String>) -> String {
 }
 
 fn parse_test(test_string: &str) -> TestFile {
-    let tests: TestFile = serde_json::from_str(test_string).unwrap();
-    tests
+    let tests = serde_json::from_str(test_string);
+    match tests {
+        Ok(file) => file,
+        Err(_) => panic!("Could not parse config file!")
+    }
 }
 
-fn check_test_file() -> String {
-    let filename : &str = "example_config.json";
-    let contents = fs::read_to_string(filename);
+fn check_test_file(path: &str) -> String {
+    let contents = fs::read_to_string(path);
     match contents {
         Ok(string) => string,
         _ => panic!("Could not read config file!"),
